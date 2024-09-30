@@ -53,6 +53,13 @@ const plugins = [
       api_token: process.env.STRAPI_API_TOKEN, // API token for Strapi
     }
   },
+  {
+    resolve: `medusa-payment-stripe`,
+    options: {
+      api_key: process.env.STRIPE_API_KEY,
+      webhook_secret: process.env.STRIPE_WEBHOOK_SECRET,
+    },
+  }
 ];
 
 
