@@ -50,7 +50,7 @@
     "nodemailer": "^6.9.15",
     "prism-react-renderer": "^2.4.0",
     "qs": "^6.13.0",
-    "typeorm": "0.3.16"
+    "typeorm": "0.3.20"
   },
   "devDependencies": {
     "@babel/cli": "^7.25.6",
