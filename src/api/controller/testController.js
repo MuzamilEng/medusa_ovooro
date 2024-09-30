@@ -9,7 +9,7 @@ const client = new Client({
 });
 client.connect();
 
-const tableData = require("../../../alltabledata.json")
+const tableData = require("../../alltabledata.json")
 
 
 const getProduct = async (req, res) => {
