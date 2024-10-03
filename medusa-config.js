@@ -20,8 +20,11 @@ switch (process.env.NODE_ENV) {
 }
 
 try {
-  dotenv.config({ path: process.cwd() + "/" + ENV_FILE_NAME });
-} catch (e) {}
+  dotenv.config({ path: path.resolve(process.cwd(), ENV_FILE_NAME) });
+  console.log(`Loaded environment file: ${ENV_FILE_NAME}`);
+} catch (e) {
+  console.error(`Error loading .env file: ${e.message}`);
+}
 
 const ADMIN_CORS = process.env.ADMIN_CORS || "http://localhost:7000,http://localhost:7001";
 const STORE_CORS = process.env.STORE_CORS || "http://localhost:8000";
@@ -40,7 +43,7 @@ const plugins = [
   {
     resolve: "@medusajs/admin",
     options: {
-      autoRebuild: true,
+      autoRebuild: process.env.AUTO_REBUILD || true,
       develop: {
         open: process.env.OPEN_BROWSER !== "false",
       },
@@ -49,10 +52,11 @@ const plugins = [
   {
     resolve: `medusa-plugin-strapi`,
     options: {
-      strapi_url: process.env.STRAPI_URL, // URL of your Strapi instance
-      api_token: process.env.STRAPI_API_TOKEN, // API token for Strapi
-    }
+      strapi_url: process.env.STRAPI_URL || "http://localhost:1337",
+      api_token: process.env.STRAPI_API_TOKEN || "your-default-token-here",
+    },
   },
+  // Uncomment the following lines if you are using Stripe for payments
   {
     resolve: `medusa-payment-stripe`,
     options: {
@@ -62,21 +66,18 @@ const plugins = [
   }
 ];
 
-
 const projectConfig = {
   jwt_secret: process.env.JWT_SECRET || "supersecret",
   cookie_secret: process.env.COOKIE_SECRET || "supersecret",
   store_cors: STORE_CORS,
   database_url: DATABASE_URL,
   admin_cors: ADMIN_CORS,
-  // Uncomment the following lines to enable REDIS
-  // redis_url: REDIS_URL
+  redis_url: REDIS_URL // Enable Redis if necessary
 };
 
 const modules = {
-  // Other module configurations
+  // Other module configurations (if applicable)
 };
-
 
 module.exports = {
   projectConfig,
@@ -84,4 +85,3 @@ module.exports = {
   modules,
   // loaders,  // Include loaders here if you have any
 };
-

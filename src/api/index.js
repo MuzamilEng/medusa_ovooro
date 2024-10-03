@@ -4,8 +4,8 @@ import axios from 'axios';
 // import PostService from 'src/services/post';
 // const {getProducts} = require('./controller/product-controller')
 // const trackingController = require('./controller/tracking-controller');
-const {logNewCarts} = require('./controller/cart-controller');
-const {getProduct} = require('./controller/testController');
+// const {logNewCarts} = require('./controller/cart-controller');
+// const {getProduct} = require('./controller/testController');
 
 
 // Route to log new carts
@@ -19,9 +19,9 @@ export default () => {
     });
   });
 
-  router.get('/store/test', getProduct);
+  // router.get('/store/test', getProduct);
   
-  router.get('/store/cartmail', logNewCarts);
+  // router.get('/store/cartmail', logNewCarts);
 
 
   // router.post('/store/track/:trackingNumber', trackingController.trackPackage);
