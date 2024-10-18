@@ -8,7 +8,8 @@ const loaders = require("@medusajs/medusa/dist/loaders/index").default
   async function start() {
     const app = express()
     const directory = process.cwd()
-
+    app.use(express.json());
+    app.use(express.urlencoded({ extended: true }));
 
       // Serve static files and apply cache headers
     app.use(express.static("public", {

@@ -63,7 +63,28 @@ const plugins = [
       api_key: process.env.STRIPE_API_KEY,
       webhook_secret: process.env.STRIPE_WEBHOOK_SECRET,
     },
-  }
+  },
+  {
+    resolve: `medusa-plugin-wishlist`,
+    options: {
+      // Set the default wishlist type (e.g., "default", "custom")
+      default_type: "default",
+    },
+  },
+  // {
+  //   resolve: `medusa-plugin-meilisearch`,
+  //   options: {
+  //     // config object passed when creating an instance
+  //     // of the MeiliSearch client
+  //     config: {
+  //       host: process.env.MEILISEARCH_HOST,
+  //       apiKey: process.env.MEILISEARCH_API_KEY,
+  //     },
+  //     settings: {
+  //       // index settings...
+  //     },
+  //   },
+  // },
 ];
 
 const projectConfig = {
