@@ -22,8 +22,10 @@ const loaders = require("@medusajs/medusa/dist/loaders/index").default
     app.use(cors({
       origin: "https://medusa-ovooro.vercel.app",
       optionsSuccessStatus: 200,
+      credentials: true,
     }));
-
+  
+    
 
 
     try {
