@@ -29,21 +29,27 @@ client.connect();
 
 export default () => {
   const router = Router()
-  const corsOptions = (req, callback) => {
-    const allowedOrigins = [
-      "http://localhost:5173",
-      "https://ovooro-store.vercel.app/", // Your custom frontend
-      "http://localhost:7000", // Medusa admin dashboard
-    ];
-    const origin = req.header("Origin");
+  const corsOptions = {
+    origin: (origin, callback) => {
+      const allowedOrigins = [
+        "http://localhost:5173",
+        "https://ovooro-store.vercel.app", // Your custom frontend
+        "http://localhost:7000", // Medusa admin dashboard
+      ];
   
-    // Check if the origin is in the list of allowed origins
-    if (allowedOrigins.includes(origin)) {
-      callback(null, { origin: true });
-    } else {
-      callback(null, { origin: false });
-    }
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true, // Allow credentials (like cookies)
   };
+  
+  // Use the CORS middleware with the updated options
+  router.use(cors(corsOptions));
+  
   
   // Use the CORS middleware with dynamic options
   router.use(cors(corsOptions));
