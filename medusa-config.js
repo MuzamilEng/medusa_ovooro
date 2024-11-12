@@ -26,8 +26,9 @@ try {
   console.error(`Error loading .env file: ${e.message}`);
 }
 
-const ADMIN_CORS = process.env.ADMIN_CORS || "http://localhost:7000,http://localhost:7001";
-const STORE_CORS = process.env.STORE_CORS || "http://localhost:8000";
+ADMIN_CORS=`http://localhost:7000,http://localhost:5173,http://localhost:7001,https://ovooro-store.vercel.app/`
+STORE_CORS=`http://localhost:8000,http://localhost:5173,https://ovooro-store.vercel.app`
+
 const DATABASE_URL = process.env.DATABASE_URL || "postgres://localhost/medusa-starter-default";
 const REDIS_URL = process.env.REDIS_URL || "redis://localhost:6379";
 
@@ -91,10 +92,11 @@ const projectConfig = {
   jwt_secret: process.env.JWT_SECRET || "supersecret",
   cookie_secret: process.env.COOKIE_SECRET || "supersecret",
   store_cors: STORE_CORS,
-  database_url: DATABASE_URL,
   admin_cors: ADMIN_CORS,
-  redis_url: REDIS_URL // Enable Redis if necessary
+  database_url: DATABASE_URL,
+  redis_url: REDIS_URL,
 };
+
 
 const modules = {
   // Other module configurations (if applicable)
