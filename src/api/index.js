@@ -33,7 +33,9 @@ export default () => {
     origin: (origin, callback) => {
       const allowedOrigins = [
         "http://localhost:5173",
-        "https://ovooro-store.vercel.app", // Your custom frontend
+        "https://ovooro-store.vercel.app",
+        "https://medusa-ovooro.vercel.app", // Your custom frontend
+        // Your custom frontend
         "http://localhost:7000", // Medusa admin dashboard
       ];
   
