@@ -68,7 +68,7 @@ export default () => {
   async function fetchAndSendProductToChainable() {
     try {
       // Step 1: Fetch the first product from your MedusaJS endpoint
-      const productResponse = await axios.get('http://localhost:9000/store/products'); // Replace with your actual backend URL
+      const productResponse = await axios.get('https://api-mzml.ovooro.com/store/products'); // Replace with your actual backend URL
       const product = productResponse.data.product;
   
       console.log('Fetched product:', product);
@@ -218,7 +218,7 @@ router.post("/store/custom", cors(corsOptions), async (req, res) => {
 
     // Step 4: Send the payload to the admin/products route
     const response = await axios.post(
-      "http://localhost:9000/admin/products",
+      "https://api-mzml.ovooro.com/admin/products",
       productPayload,
       {
         headers: {
@@ -240,7 +240,7 @@ router.post("/store/custom", cors(corsOptions), async (req, res) => {
   router.post('/store/regions', cors(corsOptions), async (req, res) => {
     try {
       const {token} = req.body
-      const response = await fetch("http://localhost:9000/admin/regions", {
+      const response = await fetch("https://api-mzml.ovooro.com/admin/regions", {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
