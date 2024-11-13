@@ -8,8 +8,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 const client = new Client({
-    connectionString: "postgresql://tcfxxx54asdalk:PaDGBC6CKF8J9lEKHWf3Cga8p9f9Hs3WYAnxZY26hex27lprG7kRpQ@db1.sigma.thechristmasfabric.com:49327/tcf_live?sslmode=require",
-//   connectionString: "postgresql://admin:root@localhost:5432/medusa_ovooro4",
+    // connectionString: "postgresql://tcfxxx54asdalk:PaDGBC6CKF8J9lEKHWf3Cga8p9f9Hs3WYAnxZY26hex27lprG7kRpQ@db1.sigma.thechristmasfabric.com:49327/tcf_live?sslmode=require",
+  connectionString: "postgresql://admin:root@localhost:5432/medusa_ovooro4",
 });
 client.connect();
 
@@ -67189,6 +67189,79 @@ const getProductTablesByProductId = async (req, res) => {
 };
 
 
-module.exports = { getProduct, getProductTablesByProductId };
+const translateText = async (text, targetLang) => {
+  const deeplApiKey ="f5fd0581-eb51-13a1-ce70-bd93d719b6ec"; //process.env.DEEPL_API_KEY; // Make sure to set your Deepl API key in environment variables
+  const deeplApiUrl = 'https://api.deepl.com/v2/translate'; // Deepl API endpoint for free version
+
+  try {
+    const response = await axios.post(deeplApiUrl, null, {
+      params: {
+        auth_key: deeplApiKey,
+        text: text,
+        target_lang: targetLang,
+      },
+    });
+    return response.data.translations[0].text; // Return translated text
+  } catch (error) {
+    console.error('Deepl translation error:', error);
+    throw new Error('Error during translation');
+  }
+};
+
+// Controller to handle table creation and translation
+const createAndTranslateTable = async (req, res) => {
+  try {
+    const { tables, targetLanguages } = req.body;
+
+    if (!tables || !Array.isArray(tables) || tables.length === 0) {
+      return res.status(400).json({ error: 'Invalid or missing tables array.' });
+    }
+    if (!targetLanguages || !Array.isArray(targetLanguages)) {
+      return res.status(400).json({ error: 'Invalid or missing targetLanguages array.' });
+    }
+
+    // Loop through tables and translate each
+    const translatedTables = await Promise.all(
+      tables.map(async (table) => {
+        const translatedTable = { ...table, translations: {} };
+
+        // Translate data for each target language
+        for (const lang of targetLanguages) {
+          const translatedData = await Promise.all(
+            table.table_data.data.map(async (row) =>
+              Promise.all(
+                row.map(async (cell) => {
+                  if (typeof cell === 'string' && !cell.startsWith('#colspan#')) {
+                    const translatedCell = await translateText(cell, lang);
+                    return translatedCell; // Translate text
+                  }
+                  return cell; // Keep non-translatable elements like `#colspan#` unchanged
+                })
+              )
+            )
+          );
+
+          translatedTable.translations[lang] = {
+            id: `${table.table_data.id}-${lang}`, // Add language suffix to table ID
+            data: translatedData,
+          };
+        }
+
+        return translatedTable; // Return translated table with all languages
+      })
+    );
+
+    // Save the translated tables to the database (replace with your database logic)
+    // await YourDatabaseModel.save(translatedTables);
+
+    res.status(201).json({ message: 'Tables created and translated successfully!', translatedTables });
+  } catch (error) {
+    console.error('Error creating and translating tables:', error);
+    res.status(500).json({ error: 'Failed to create and translate table data.' });
+  }
+};
+
+
+module.exports = { getProduct, getProductTablesByProductId, createAndTranslateTable };
 
 

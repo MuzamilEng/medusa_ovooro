@@ -2,6 +2,7 @@ import { Router } from 'express';
 import express from 'express';
 import axios from 'axios';
 import bodyParser from "body-parser"
+import sendEmail from './utils/sendMial';
 const fileUpload = require("express-fileupload");
 const path = require("path");
 const fs = require("fs");
@@ -10,19 +11,12 @@ const multer = require('multer');
 const { Client } = require('pg');
 const https = require("https")
 
-// import { getOrderBYId } from 'src/admin/orderService';
-// import PostService from 'src/services/post';
-// const {getProducts} = require('./controller/product-controller')
-// const trackingController = require('./controller/tracking-controller');
-// const {logNewCarts} = require('./controller/cart-controller');
-const {getProduct, getProductTablesByProductId} = require('./controller/testController');
-
-
+const {getProduct, getProductTablesByProductId, createAndTranslateTable} = require('./controller/testController');
 // Route to log new carts
 
 const client = new Client({
-  connectionString: "postgresql://tcfxxx54asdalk:PaDGBC6CKF8J9lEKHWf3Cga8p9f9Hs3WYAnxZY26hex27lprG7kRpQ@db1.sigma.thechristmasfabric.com:49327/tcf_live?sslmode=require",
-  // connectionString: "postgresql://admin:root@localhost:5432/medusa_ovooro4",
+  // connectionString: "postgresql://tcfxxx54asdalk:PaDGBC6CKF8J9lEKHWf3Cga8p9f9Hs3WYAnxZY26hex27lprG7kRpQ@db1.sigma.thechristmasfabric.com:49327/tcf_live?sslmode=require",
+  connectionString: "postgresql://admin:root@localhost:5432/medusa_ovooro4",
 });
 
 client.connect();
@@ -35,8 +29,7 @@ export default () => {
         "http://localhost:5173",
         "https://ovooro-store.vercel.app",
         "https://medusa-ovooro.vercel.app", // Your custom frontend
-        // Your custom frontend
-        "http://localhost:7000", // Medusa admin dashboard
+        "http://localhost:7001", // Medusa admin dashboard
       ];
   
       // Allow requests with no origin (like mobile apps or curl requests)
@@ -49,10 +42,6 @@ export default () => {
     credentials: true, // Allow credentials (like cookies)
   };
   
-  // Use the CORS middleware with the updated options
-  router.use(cors(corsOptions));
-  
-  
   // Use the CORS middleware with dynamic options
   router.use(cors(corsOptions));
   
@@ -61,7 +50,9 @@ export default () => {
   // Route to fetch and save tracking information
 
   router.get('/store/test',  getProduct);
-  router.post('/store/getProductTables', getProductTablesByProductId); // Add this route after the product fetching route
+  router.post('/store/getProductTables', getProductTablesByProductId);
+  router.post('/store/createTable', createAndTranslateTable)
+   // Add this route after the product fetching route
 
 
   const chainableBaseURL = 'https://api.chainable.com/v1'; // Replace with Chainable's base URL
@@ -70,7 +61,7 @@ export default () => {
   async function fetchAndSendProductToChainable() {
     try {
       // Step 1: Fetch the first product from your MedusaJS endpoint
-      const productResponse = await axios.get('https://api-mzml.ovooro.com/store/products'); // Replace with your actual backend URL
+      const productResponse = await axios.get('store/products'); // Replace with your actual backend URL
       const product = productResponse.data.product;
   
       console.log('Fetched product:', product);
@@ -175,6 +166,43 @@ async function createTranslations(text) {
   }
 }
 
+
+
+// Controller to send email with translated message
+router.post("/store/sendTranslatedEmail", cors(corsOptions), async (req, res) => {
+  try {
+    // Extract fields from the request body
+    const { subject, to, message, language } = req.body;
+
+    // Validate input fields
+    if (!subject || !to || !message || !language) {
+      return res.status(400).json({ error: "All fields are required" });
+    }
+
+    // Create translations for the message
+    const translations = await createTranslations(message);
+
+    // Choose the correct translation based on the selected language
+    let translatedMessage = message; // Default to the original message
+    if (language === "DE") translatedMessage = translations.de;
+    if (language === "FR") translatedMessage = translations.fr;
+    if (language === "EN") translatedMessage = translations.en;
+
+    // Send the email with the translated message
+    const emailInfo = await sendEmail(to, subject, translatedMessage);
+
+    // Return success response
+    res.status(200).json({
+      success: true,
+      message: "Email sent successfully",
+      emailInfo,
+    });
+  } catch (error) {
+    console.error("Error in sendTranslatedEmail:", error);
+    res.status(500).json({ error: "Failed to send email" });
+  }
+});
+
 // Custom API route to save the product
 router.post("/store/custom", cors(corsOptions), async (req, res) => {
   const {data: product, token} = req.body;
@@ -220,7 +248,7 @@ router.post("/store/custom", cors(corsOptions), async (req, res) => {
 
     // Step 4: Send the payload to the admin/products route
     const response = await axios.post(
-      "https://api-mzml.ovooro.com/admin/products",
+      "http://localhost:9000/admin/products",
       productPayload,
       {
         headers: {
@@ -242,7 +270,7 @@ router.post("/store/custom", cors(corsOptions), async (req, res) => {
   router.post('/store/regions', cors(corsOptions), async (req, res) => {
     try {
       const {token} = req.body
-      const response = await fetch("https://api-mzml.ovooro.com/admin/regions", {
+      const response = await fetch("http://localhost:9000/admin/regions", {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -352,22 +380,124 @@ router.post('/store/media', upload.array('images', 10), cors(corsOptions), async
     });
   });
 
-  
-  // router.get('/store/cartmail', logNewCarts);
 
 
-  // router.post('/store/track/:trackingNumber', trackingController.trackPackage);
-  // Route to get tracking information from the database
-  // router.get('/store/tracking/:trackingNumber', trackingController.getTracking);
-  // Route to fetch products from Strapi
-  // router.get('/store/categories', getProducts)
-  // Route to fetch oders from admin
-  // router.get('/store/orders/:orderId', getOrderBYId)
+  router.post("/store/sendTranslatedEmail", cors(corsOptions), async (req, res) => {
+    try {
+      // Extract fields from the request body
+      const { subject, to, message, language } = req.body;
   
-  // router.get("/admin/orders/:orderId", getOrderClaims);
+      // Validate input fields
+      if (!subject || !to || !message || !language) {
+        return res.status(400).json({ error: "All fields are required" });
+      }
+  
+      // Create translations for the message
+      const translations = await createTranslations(message);
+  
+      // Choose the correct translation based on the selected language
+      let translatedMessage = message; // Default to the original message
+      if (language === "DE") translatedMessage = translations.de;
+      if (language === "FR") translatedMessage = translations.fr;
+      if (language === "EN") translatedMessage = translations.en;
+      console.log(translatedMessage,'message')
+      // Send the email with the translated message
+      const emailInfo = await sendMail(to, subject, translatedMessage);
+  
+      // Return success response
+      res.status(200).json({
+        success: true,
+        message: "Email sent successfully",
+        emailInfo,
+      });
+    } catch (error) {
+      console.error("Error in sendTranslatedEmail:", error);
+      res.status(500).json({ error: "Failed to send email" });
+    }
+  });
+
+
+
+
+
+
+
+
+  const translateText = async (text, targetLang) => {
+    const deeplApiKey ="f5fd0581-eb51-13a1-ce70-bd93d719b6ec"; //process.env.DEEPL_API_KEY; // Make sure to set your Deepl API key in environment variables
+    const deeplApiUrl = 'https://api.deepl.com/v2/translate'; // Deepl API endpoint for free version
+  
+    try {
+      const response = await axios.post(deeplApiUrl, null, {
+        params: {
+          auth_key: deeplApiKey,
+          text: text,
+          target_lang: targetLang,
+        },
+      });
+      return response.data.translations[0].text; // Return translated text
+    } catch (error) {
+      console.error('Deepl translation error:', error);
+      throw new Error('Error during translation');
+    }
+  };
+  
+  // Controller to handle table creation and translation
+  router.post('/store/create-table', async (req, res) => {
+    try {
+      const { tables, targetLanguages } = req.body;
+  
+      // Validate input data
+      if (!tables || !Array.isArray(tables) || tables.length === 0) {
+        return res.status(400).json({ error: 'Invalid or missing tables array.' });
+      }
+      if (!targetLanguages || !Array.isArray(targetLanguages)) {
+        return res.status(400).json({ error: 'Invalid or missing targetLanguages array.' });
+      }
+  
+      // Loop through tables and translate each
+      const translatedTables = await Promise.all(
+        tables.map(async (table) => {
+          const translatedTable = { ...table, translations: {} };
+  
+          // Translate data for each target language
+          for (const lang of targetLanguages) {
+            const translatedData = await Promise.all(
+              table.table_data.data.map(async (row) =>
+                Promise.all(
+                  row.map(async (cell) => {
+                    if (typeof cell === 'string' && !cell.startsWith('#colspan#')) {
+                      const translatedCell = await translateText(cell, lang);
+                      return translatedCell; // Translate text
+                    }
+                    return cell; // Keep non-translatable elements like #colspan# unchanged
+                  })
+                )
+              )
+            );
+  
+            translatedTable.translations[lang] = {
+              id: `${table.table_data.id}-${lang}`, // Add language suffix to table ID
+              data: translatedData,
+            };
+          }
+  
+          return translatedTable; // Return translated table with all languages
+        })
+      );
+  
+  
+      res.status(201).json({
+        message: 'Tables created and translated successfully!',
+        translatedTables,
+      });
+    } catch (error) {
+      console.error('Error creating and translating tables:', error);
+      res.status(500).json({ error: 'Failed to create and translate table data.' });
+    }
+  });
 
 
   return router;
 };
 
-// variant_01J52WJ79PV8ATSDJHB689W6C4

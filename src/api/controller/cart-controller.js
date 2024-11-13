@@ -1,89 +1,51 @@
+
 const cron = require('node-cron');
 const { Client } = require('pg');
-const nodemailer = require('nodemailer');
-const {google} = require('googleapis');
+const mailjet = require('node-mailjet');
+
 // PostgreSQL client setup
 const client = new Client({
-  connectionString: "postgresql://tcfxxx54asdalk:PaDGBC6CKF8J9lEKHWf3Cga8p9f9Hs3WYAnxZY26hex27lprG7kRpQ@db1.sigma.thechristmasfabric.com:49327/tcf_live?sslmode=require",
+  // connectionString: "postgresql://tcfxxx54asdalk:PaDGBC6CKF8J9lEKHWf3Cga8p9f9Hs3WYAnxZY26hex27lprG7kRpQ@db1.sigma.thechristmasfabric.com:49327/tcf_live?sslmode=require",
+  connectionString: "postgresql://admin:root@localhost:5432/medusa_ovooro4",
+
 });
 
-const mailjet = require('node-mailjet');
+// Mailjet setup
 const mailjetClient = mailjet.apiConnect('3e83f2bf1bd4db896d56ec7193b86b76', '4c883644bf6be0a4363caf34962842de');
 
 client.connect();
 
-// Function to send email
-// const sendEmail = async (email, cartId) => {
-//   try {
-//     const request = await mailjetClient
-//       .post('send', { version: 'v3.1' })
-//       .request({
-//         Messages: [
-//           {
-//             From: {
-//               Email: "your-email@example.com",
-//               Name: "Your Company Name",
-//             },
-//             To: [
-//               {
-//                 Email: email,
-//                 Name: "Customer",
-//               },
-//             ],
-//             Subject: "Reminder: Your Cart is Still Pending",
-//             TextPart: `Hello, \n\nYou have a pending cart with ID ${cartId}. Please complete your purchase soon. \n\nBest regards, \nYour Company`,
-//             HTMLPart: `<p>Hello,</p><p>You have a pending cart with ID <strong>${cartId}</strong>. Please complete your purchase soon.</p><p>Best regards,<br>Your Company</p>`,
-//           },
-//         ],
-//       });
-
-//     console.log(`Email sent to ${email} for cart ID ${cartId}`);
-//   } catch (error) {
-//     console.error(`Error sending email to ${email}:`, error);
-//   }
-// };
-const CLIENT_ID = '327001933009-8dob1g42j3aehpeqqd31k86qv8afi6bq.apps.googleusercontent.com';
-
-
-const CLIENT_SECRET = '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';
-
-const REDIRECT_URI = 'https://developers.google.com/oauthplayground';
-
-const REFRESH_TOKEN = '1//042SQkcQNsbQfCgYIARAAGAQSNwF-L9IrjOGjkoLfJF7crFh7Hp2d2AYhetCxkkh0f-KJkCidrFjtU8lqqh1IPaPXhCXZBjbsvHQ';
-
-const oAuth2Client = new google.auth.OAuth2(CLIENT_ID, CLIENT_SECRET, REDIRECT_URI);
-oAuth2Client.setCredentials({ refresh_token: REFRESH_TOKEN });
-
-export const sendEmail = async (to, subject="Reminder: Your Cart is Still Pending", text="Hello, \n\nYou have a pending cart with ID ${cartId}. Please complete your purchase soon. \n\nBest regards, \nYour Company", cartId) => {
+// Function to send email using Mailjet
+const sendEmail = async (to, cartId) => {
   try {
-    const accessToken = await oAuth2Client.getAccessToken();
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        type: "OAuth2",
-        user: "testmuzamil41@gmail.com",
-        clientId: CLIENT_ID,
-        clientSecret: CLIENT_SECRET,
-        refreshToken: REFRESH_TOKEN,
-        accessToken: accessToken,
-      },
-    });
+    const request = await mailjetClient
+      .post('send', { version: 'v3.1' })
+      .request({
+        Messages: [
+          {
+            From: {
+              Email: "testmuzamil41@gmail.com",  // Replace with your email
+              Name: "Your Company Name",        // Replace with your company name
+            },
+            To: [
+              {
+                Email: to,
+                Name: "Customer",
+              },
+            ],
+            Subject: "Reminder: Your Cart is Still Pending",
+            TextPart: `Hello, \n\nYou have a pending cart with ID ${cartId}. Please complete your purchase soon. \n\nBest regards, \nYour Company`,
+            HTMLPart: `<p>Hello,</p><p>You have a pending cart with ID <strong>${cartId}</strong>. Please complete your purchase soon.</p><p>Best regards,<br>Your Company</p>`,
+          },
+        ],
+      });
 
-    const mailOptions = {
-      from: "Medusa <testmuzamil41@gmail.com>",
-      to: to,
-      subject: subject,
-      text: text,
-    };
-
-    const result = await transporter.sendMail(mailOptions);
-    console.log(result,'result');
-    return result;
-    
+    console.log(`Email sent to ${to} for cart ID ${cartId}`);
   } catch (error) {
-    console.log(error, "Error sending mail");
+    console.error(`Error sending email to ${to}:`, error);
   }
 };
+
 // Function to check and log new carts and send emails
 const logNewCarts = async () => {
   try {
@@ -108,8 +70,6 @@ const logNewCarts = async () => {
       for (const cart of filteredEmailCarts) {
         await sendEmail(cart.email, cart.id);
       }
-
-
     } else {
       console.log("No new carts found.");
     }
@@ -118,21 +78,10 @@ const logNewCarts = async () => {
   }
 };
 
-
-// Export the function  
-module.exports = { logNewCarts };
-
 // Schedule the task to run every minute
-// cron.schedule("* * * * *", () => {
-//   logNewCarts();
-// });
+cron.schedule("* * * * *", () => {
+  // logNewCarts();
+});
 
 // Keep the Node.js process running
 console.log("Scheduler started. Press Ctrl+C to exit.");
-
-
-
-
-// custom email code from woo commerce
-
-
